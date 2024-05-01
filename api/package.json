@@ -1,0 +1,27 @@
+{
+  "name": "dynamic-qr-api",
+  "version": "1.0.3",
+  "description": "API for Dynamic QR Code",
+  "main": "api.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon api.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Coomico",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-history-api-fallback": "^2.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "mongoose": "^8.3.2",
+    "nanoid": "^5.0.7",
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
