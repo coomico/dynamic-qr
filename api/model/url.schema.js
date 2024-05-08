@@ -1,13 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import bcrypt from 'bcryptjs';
-
-const _SALT_ROUNDS_ = 10;
+import crypto from 'crypto';
 
 const urlSchema = new Schema({
-  _id: {
-    type: String,
-    required: true,
-  },
   Password: {
     type: String,
     required: true,
@@ -25,23 +19,15 @@ const urlSchema = new Schema({
     required: true,
     default: 0,
   },
-  CreationDate: {
-    type: Number,
-    required: true,
-    default: Date.now(),
-  },
   QrCode: {
     type: String,
   },
-});
+}, {timestamps: true});
 
 urlSchema.pre('save', async function() {
-  const passwordHash = await bcrypt.hash(this.Password, _SALT_ROUNDS_);
+  const passwordHash = crypto.createHmac('sha256', process.env.SECRET_KEY).update(this.Password).digest('hex');
   this.Password = passwordHash;
 });
 
-urlSchema.methods.comparePassword = async function(password) {
-  return await bcrypt.compare(password, this.Password);
-}
 
 export default mongoose.model('urldb', urlSchema);;

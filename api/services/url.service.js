@@ -44,25 +44,19 @@ class UrlService {
         return Promise.reject("_invalid_url_");
       }
 
-      const id = nanoid(8);
-
-      const urls = await UrlDB.find({
-        Origin: origin
+      const urls = await UrlDB.findOne({
+        Origin: origin,
+        Password: crypto.createHmac('sha256', process.env.SECRET_KEY).update(password).digest('hex')
       });
-      for (const url of urls) {
-        const match = await url.comparePassword(password);
-        if (match) {
-          return Promise.reject("_already_exist_");
+        if (urls) {
+            return Promise.reject("_already_exist_");
         }
-      }
-
       const url = new UrlDB({
-          _id: id,
           Password: password,
-          Origin: origin,
-          Short: `${process.env.DOMAIN}/s/${id}`,
-          CreationDate: Date.now(),
+          Origin: origin
         });
+        url.Short =`${process.env.DOMAIN}/s/${url._id}`;
+
       await url.save();
      
       return Promise.resolve(url.Short);
