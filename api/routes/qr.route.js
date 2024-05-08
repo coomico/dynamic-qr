@@ -8,7 +8,7 @@ const QrRouter = express.Router();
 //   origin: "link",
 //   password: "password",
 // }
-QrRouter.post("", genQrCode);
+QrRouter.post("/", genQrCode);
 
 // GET localhost:3000/api/qr/__id__
 QrRouter.get("/:id", getQrCode);
