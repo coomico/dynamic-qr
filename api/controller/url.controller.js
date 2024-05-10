@@ -1,9 +1,15 @@
 import UrlService from '../services/url.service.js';
 
 export const getOriginalUrl = (req, res) => {
-  UrlService.origin(req.params.id, true)
-  .then((originurl) => {
-    return res.status(301).redirect(originurl);
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({err: "Missing Required Field!"});
+  }
+
+  UrlService.origin(id, true)
+  .then((origin) => {
+    console.log(origin)
+    return res.status(301).redirect(origin);
   })
   .catch((reason) => {
     if (reason === "_id_not_exist_") {
@@ -16,6 +22,9 @@ export const getOriginalUrl = (req, res) => {
 
 export const createShortUrl = (req, res) => {
   const { origin, password } = req.body;
+  if (!origin || !password) {
+    return res.status(400).json({err: "Missing Required Field!"});
+  }
 
   UrlService.create(origin, password)
   .then((shorturl) => {
@@ -38,6 +47,9 @@ export const createShortUrl = (req, res) => {
 
 export const deleteShortUrl = (req, res) => {
   const { id, password } = req.body;
+  if (!id || !password) {
+    return res.status(400).json({err: "Missing Required Field!"});
+  }
 
   UrlService.delete(id, password)
   .then(() => {
@@ -45,11 +57,11 @@ export const deleteShortUrl = (req, res) => {
   })
   .catch((reason) => {
     switch (reason) {
-      case "_invalid_password_":
-        return res.status(401).json({err: "Unauthorized!"});
-        break;
-      case "_id_not_exist_":
-        return res.status(404).json({err: "Not Found!"});
+      case "_short_not_exist_":
+        return res.status(404).json({
+          err: "Not Found!",
+          msg: "Make sure the payload is correct.",
+        });
         break;
       default:
         return res.status(500).json({err: "Server Error!"});
@@ -59,9 +71,12 @@ export const deleteShortUrl = (req, res) => {
 };
 
 export const updateOriginalUrl = (req, res) => {
-  const { id, newOrigin, password } = req.body;
+  const { id, neworigin, password } = req.body;
+  if (!id || !neworigin || !password) {
+    return res.status(400).json({err: "Missing Required Field!"});
+  }
 
-  UrlService.updateOrigin(id, newOrigin, password)
+  UrlService.updateOrigin(id, neworigin, password)
   .then((originurl, shorturl) => {
     return res.status(200).json({
       origin: originurl,
@@ -73,11 +88,11 @@ export const updateOriginalUrl = (req, res) => {
       case "_invalid_url_":
         return res.status(400).json({err: "Bad Request!"});
         break;
-      case "_invalid_password_":
-        return res.status(401).json({err: "Unauthorized!"});
-        break;
-      case "_id_not_exist_":
-        return res.status(404).json({err: "Not Found!"});
+      case "_short_not_exist_":
+        return res.status(404).json({
+          err: "Not Found!",
+          msg: "Make sure the payload is correct.",
+        });
         break;
       default:
         return res.status(500).json({err: "Server Error!"});

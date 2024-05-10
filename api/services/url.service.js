@@ -1,7 +1,9 @@
 import { nanoid } from 'nanoid';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import UrlDB from '../model/url.schema.js';
-import { validateUrl, idValid } from '../utils/validate.url.js';
+import { createQrUrl } from '../services/qr.service.js';
+import { validateUrl, idValid, schemeFiller } from '../utils/validate.url.js';
 
 dotenv.config();
 
@@ -46,34 +48,34 @@ class UrlService {
 
       const id = nanoid(8);
 
-      const urls = await UrlDB.find({
-        Origin: origin
+      let url = await UrlDB.findOne({
+        Origin: schemeFiller(origin),
+        Password: crypto.createHmac('sha256', process.env.SECRET_KEY).update(password).digest('hex'),
       });
-      for (const url of urls) {
-        const match = await url.comparePassword(password);
-        if (match) {
-          return Promise.reject("_already_exist_");
-        }
+      if (url) {
+        return Promise.reject("_already_exist_");
       }
 
-      const url = new UrlDB({
+      url = new UrlDB({
           _id: id,
           Password: password,
-          Origin: origin,
+          Origin: schemeFiller(origin),
           Short: `${process.env.DOMAIN}/s/${id}`,
-          CreationDate: Date.now(),
-        });
-      await url.save();
+      });
+
+      url = await url.save();
+      console.log({
+        createdID: url._id,
+        origin: url.Origin,
+      });
      
       return Promise.resolve(url.Short);
     } catch (error) {
       if (error.code === 11000) {
-        // TODO: yup, handle this one
-        return Promise.reject("_duplicated_id_");
+        return UrlService.create(origin, password);
+      } else {
+        return Promise.reject(error);
       }
-
-      console.error(error);
-      return Promise.reject(error);
     }
   };
   
@@ -84,23 +86,17 @@ class UrlService {
  */
   static async delete(id, password) {
     try {
-      const url = await UrlDB.findOne({ _id: id })
-      if (!url) {
-        return Promise.reject("_id_not_exist_");
-      }
-
-      const match = await url.comparePassword(password);
-      if (!match) {
-        return Promise.reject("_invalid_password_");
-      }
-
-      const res = await UrlDB.deleteOne({ 
+      const url = await UrlDB.findOneAndDelete({
         _id: id,
-        Origin: url.Origin,
+        Password: crypto.createHmac('sha256', process.env.SECRET_KEY).update(password).digest('hex'),
       });
+      if (!url) {
+        return Promise.reject("_short_not_exist_");
+      }
+
       console.log({
-        deletedCound: res.deletedCount,
-        id: url._id,
+        deletedID: url._id,
+        origin: url.Origin,
       })
 
       return Promise.resolve("success");
@@ -122,23 +118,21 @@ class UrlService {
         return Promise.reject("_invalid_url_");
       }
 
-      const url = await UrlDB.findOne({ _id: id })
-      if (!url) {
-        return Promise.reject("_id_not_exist_");
-      }
-
-      const match = await url.comparePassword(password);
-      if (!match) {
-        return Promise.reject("_invalid_password_");
-      }
-
-      const res = await UrlDB.updateOne(
-        { _id: id },
-        { $set: { Origin: neworigin }, }
+      const url = await UrlDB.findOneAndUpdate(
+        {
+          _id: id,
+          Password: crypto.createHmac('sha256', process.env.SECRET_KEY).update(password).digest('hex'),
+        },
+        { $set: { Origin: schemeFiller(neworigin) }, }
       );
+      if (!url) {
+        return Promise.reject("_short_not_exist_");
+      }
+
       console.log({
-        modifiedCount: res.modifiedCount,
-        id: url._id,
+        modifiedID: url._id,
+        oldOrigin: url.Origin,
+        newOrigin: neworigin,
       });
 
       return Promise.resolve(neworigin, url.Short);
@@ -162,6 +156,22 @@ class UrlService {
       if (!url) {
         return Promise.reject("_short_not_exist_");
       }
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
+  };
+
+  static async getQrCode(id) {
+    try {
+      const url = await UrlDB.findOne({ _id: id });
+      if (!url) {
+        return Promise.reject("_id_not_exist_");
+      }
+
+      const qrcode = url.QrCode ? url.QrCode : createQrUrl(url.Short);
+
+      return Promise.resolve(qrcode);
     } catch (error) {
       console.error(error);
       return Promise.reject(error);

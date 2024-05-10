@@ -41,13 +41,14 @@ const statusCode = ref();
 const errorMessage = {
   400: "Nah bro, it failed!",
   401: "Sorry bro, invalid. Please check again!",
+  404: "Not found, dude. Please check again!",
   429: "Dont rush bro! Keep calm, okay.",
   503: "Bro, you're going too fast."
 };
 
 watchEffect(() => {
   data.id = idValid(short.value?.url);
-  data.newOrigin = originValid(newOrigin.value?.url);
+  data.neworigin = originValid(newOrigin.value?.url);
   data.password = password.value?.password;
 })
 
@@ -68,15 +69,15 @@ const update = (data) => {
 
     <ElementBox>
       <ElementLabel>Short URL</ElementLabel>
-      <UrlAndPaste placeholder="https://coomi.codes/s/xxxxxxxx" ref="short" />
+      <UrlAndPaste placeholder="https://coomi.codes/s/xxx..." ref="short" />
       <p v-if="data.id" class="text-sm italic text-slate-500">valid</p>
     </ElementBox>
 
     <ElementBox>
       <ElementLabel>New Target</ElementLabel>
       <UrlAndPaste placeholder="Put your link here..." ref="newOrigin"/>
-      <p v-if="data.newOrigin && data.newOrigin !== 'invalid'" class="text-sm italic text-slate-500">valid</p>
-      <p v-else-if="data.newOrigin === 'invalid'" class="text-sm italic text-red-500">invalid</p>
+      <p v-if="data.neworigin && data.neworigin !== 'invalid'" class="text-sm italic text-slate-500">valid</p>
+      <p v-else-if="data.neworigin === 'invalid'" class="text-sm italic text-red-500">invalid</p>
     </ElementBox>
 
     <PasswordBox placeholder="Put your password here..." ref="password" />

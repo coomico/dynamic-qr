@@ -1,6 +1,6 @@
 {
   "name": "dynamic-qr-api",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "API for Dynamic QR Code",
   "main": "api.js",
   "type": "module",
@@ -11,7 +11,6 @@
   "author": "Coomico",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "connect-history-api-fallback": "^2.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

@@ -8,3 +8,13 @@ export const idValid = (url) => {
       return url.match(regex)[3];
   }
 };
+
+export const schemeFiller = (url) => {
+  const regex = /([a-zA-Z]{1,20}):\/\/([\w_-]+(?:(?:\.[\w_-]+)?))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?/i;
+  const match = url.match(regex);
+  if (url && !match) {
+    return `http://${url}`;
+  }
+
+  return url;
+};

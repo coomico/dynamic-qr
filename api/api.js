@@ -36,6 +36,7 @@ const limiter = rateLimit({
 
 ConnectDB();
 
+api.set("trust proxy", "127.0.0.1");
 api.use(express.json());
 api.use(express.urlencoded({extended: true}));
 api.use(cors(corsOptions));

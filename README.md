@@ -42,13 +42,14 @@ Because backend will serve static files, we need to build the frontend and copy 
 ## Setup the Env
 There are several environtment that is needed by the App.
 ```env
-DOMAIN=your.domain.con
+DOMAIN=domain.con
 BASE_URL=localhost
 BASE_PORT=3000
 MONGO_HOST=127.0.0.1
 MONGO_PORT=27017
 MONGO_USER=your_mongo_user
 MONGO_PASS=your_mongo_pass
+SECRET_KEY=himitsu
 ```
 
 ## Running the App
