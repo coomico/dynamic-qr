@@ -1,0 +1,66 @@
+name: dynamic-qr
+
+services:
+  qr-api:
+    image: qr-api
+    container_name: qr-api
+    build: api
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=your_mongo_user
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=your_mongo_pass
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+
+      - APP_HOST=localhost
+      - APP_PORT=3002
+      - APP_SCHEME=http
+
+      - WEB_HOST=localhost
+      - WEB_PORT=3003
+      - WEB_SCHEME=http
+
+      - DB_USER=your_mongo_user
+      - DB_PASS=your_mongo_pass
+      - DB_HOST=mongodb
+      - DB_PORT=27071
+      - DB_NAME=dynamicqr
+
+      - ORIGIN_KEY=your_origin_key
+      - ORIGIN_EXP=86400
+      - ACCESS_KEY=your_access_key
+      - ACCESS_EXP=900
+      - REFRESH_KEY=your_refresh_key
+      - REFRESH_EXP=86400
+    ports:
+      - "3002:3002"
+    networks:
+      - mongo-network
+    depends_on:
+      - mongodb
+
+  qr-web:
+    image: qr-web
+    container_name: qr-web
+    build:
+      context: web
+      target: prod
+    ports:
+      - "3003:3003"
+
+  mongodb:
+    container_name: mongodb
+    # if u have issue like `MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!`
+    # use mongo:4.4.18 instead.
+    image: mongo
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=your_mongo_user
+      - MONGO_INITDB_ROOT_PASSWORD=your_mongo_pass
+    command: mongod --port 27071
+    ports:
+      - "127.0.0.1:27071:27071"
+    networks:
+      - mongo-network
+
+networks:
+  mongo-network:
+    name: mongo-network

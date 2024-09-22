@@ -1,33 +1,43 @@
-<script setup>
-import { onMounted } from 'vue';
-import { RouterView } from 'vue-router';
-import RouterLink from './components/RouterLink.vue';
-import NavBar from './components/NavBar.vue';
+<script setup lang="ts">
+import { RouterView, useRouter } from 'vue-router';
 
-onMounted(async () => {
-  try {
-    await navigator.clipboard.read();
-  } catch(err) {
-    if (err.name === 'NotAllowedError') {
-      alert('please allow clipboard access 	(*_ _)人');
-    }
+import Toaster from '@/components/ui/toast/Toaster.vue';
+
+import { ClearStateAndStorage, useAccountStore, useNotifStore } from './stores';
+import { AuthStorage, storageEventName } from './utils/storage';
+
+const router = useRouter();
+
+async function authChange() {
+  if (AuthStorage.auth) {
+    await useAccountStore().GetProfile();
+
+    return Promise.all([
+      useNotifStore().Notify({
+        status: 'success',
+        message: 'Redirecting to collection page...'
+      }),
+      router.push({name: 'collection'})
+    ]);
   }
-});
+
+  else {
+    ClearStateAndStorage();
+
+    return Promise.all([
+      useNotifStore().Notify({
+        status: 'success',
+        message: 'Redirecting to login page...'
+      }),
+      router.push({name: 'login'})
+    ]);
+  }
+}
+
+window.addEventListener(storageEventName, authChange);
 </script>
 
 <template>
-  <div class="min-h-screen overflow-hidden font-sans">
-    <div class="divide-y divide-dashed">
-      <div class="py-2">
-
-        <NavBar>
-          <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/create">Create</RouterLink>
-          <RouterLink to="/modify">Modify</RouterLink>
-        </NavBar>
-      </div>
-
-      <RouterView></RouterView>
-    </div>
-  </div>
+  <Toaster />
+  <RouterView />
 </template>

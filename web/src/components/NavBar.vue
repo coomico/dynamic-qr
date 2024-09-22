@@ -1,8 +1,23 @@
+<script setup lang="ts">
+import { defineAsyncComponent } from 'vue';
+
+const ColorMode = defineAsyncComponent(() => import('./ColorMode.vue'));
+const UserNav = defineAsyncComponent(() => import('./nav/UserNav.vue'));
+
+defineProps<{
+  title: string
+}>();
+</script>
+
 <template>
-  <nav class="py-4 px-6 relative flex text-md justify-center">
-    <h1 class="absolute left-6 leading-5 text-xl italic font-semibold collapse md:visible">Dynamic QR Code</h1>
-    <ul class="space-x-2 font-thin">
-      <slot></slot>
-    </ul>
+  <nav class="flex content-center items-center justify-between">
+    <h2 class="text-2xl font-semibold tracking-tight">
+      {{ title }}
+    </h2>
+
+    <div class="flex items-center">
+      <ColorMode class="rounded-full" />
+      <UserNav />
+    </div>
   </nav>
 </template>
