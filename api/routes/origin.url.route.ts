@@ -1,8 +1,8 @@
 import { Router } from "express";
 import cors from 'cors';
 
-import { isRedirectAllowed } from "../middlewares/auth.handler";
 import { getOriginUrl } from "../controller/url.controller";
+import { extractPassKey } from "../middlewares/auth.handler";
 
 import { WebUrl } from "../utils/envs";
 
@@ -17,7 +17,7 @@ OriginUrlRouter.get(
     origin: WebUrl,
     credentials: true
   }),
-  isRedirectAllowed,
+  extractPassKey,
   getOriginUrl);
 
 export default OriginUrlRouter;

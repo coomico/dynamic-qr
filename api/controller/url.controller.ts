@@ -1,15 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { renderToString } from 'vue/server-renderer';
 
-import { IUser } from "../models";
 import { createQr, UrlService } from "../services";
-import base from "../ssr/base";
-import { createApp } from '../ssr/template';
 
 import { urlResponse } from "../transformer/response";
 import { ErrorCapture } from "../utils/error_capture";
 import { schemeFiller } from "../utils/filler";
-import { appUrl } from "../utils/envs";
+import { cookieOptions, createPassPage } from "../middlewares/auth.handler";
 
 export const createShortUrl = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -42,17 +38,31 @@ export const getOriginUrl = async (req: Request, res: Response, next: NextFuncti
     const { shortId } = req.params;
     const url = await UrlService.getById(shortId);
 
-    if (url.isPrivate && 
-      !req.redirect) {
-        await url.populate<{user: IUser}>('owner', 'name username');
-        const { username } = url.owner as unknown as IUser;
-        
-        const link = `${appUrl}/auth/redirect/${url.id}`;
-        const app = createApp(link, username);
-        const html = await renderToString(app);
+    if (url.isPrivate) {
+      if (!req.passKey) {
+        const passPage = await createPassPage(url);
+        return res.status(200).send(passPage);
+      }
 
-        res.type('html');
-        return res.status(200).send(base(html));
+      const match = url.comparePassKey(req.passKey);
+      if (!match) {
+        res.cookie(
+          `o.${url.id}`,
+          '',
+          Object.assign(
+            {},
+            cookieOptions,
+            {
+              path: `/o/${url.id}`,
+              expires: new Date(1),
+              maxAge: 10
+            }
+          )
+        );
+
+        const passPage = await createPassPage(url);
+        return res.status(200).send(passPage);
+      }
     }
     
     url.visitCount += 1;

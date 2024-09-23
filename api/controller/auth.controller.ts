@@ -168,7 +168,7 @@ export const redirectPermission = async (req: Request, res: Response, next: Next
     const match = await url.comparePassword(password);
     if (!match) throw new ErrorCapture('password does not match', 401);
 
-    const originToken = AuthHandler.createOriginToken(url.id, true);
+    const originToken = AuthHandler.createOriginToken(url.passKey as string);
     res.cookie(
       `o.${url.id}`,
       originToken,

@@ -4,7 +4,7 @@ export declare global {
     interface Request {
       userId: string,
       userAgent: string,
-      redirect: boolean
+      passKey: string
     }
 
     interface Response {

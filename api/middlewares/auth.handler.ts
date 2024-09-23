@@ -1,11 +1,17 @@
 import { CookieOptions, NextFunction, Request, Response } from 'express';
+import { renderToString } from 'vue/server-renderer';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+
+import { IUrl, IUser } from '../models';
+import base from "../ssr/base";
+import { createApp } from '../ssr/template';
 
 import { ErrorCapture } from '../utils/error_capture';
 import {
   accessExp,
   accessKey,
+  appUrl,
   originExp,
   originKey,
   refreshExp,
@@ -15,7 +21,7 @@ import {
 export interface IClaims {
   id: string,
   ua?: string,
-  rd?: boolean,
+  pk?: string,
   iat: number,
   exp: number
 };
@@ -56,7 +62,7 @@ export const isUserAuthenticated = async (req: Request, res: Response, next: Nex
   }
 };
 
-export const isRedirectAllowed = async (req: Request, res: Response, next: NextFunction) => {
+export const extractPassKey = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { shortId } = req.params;
     const originToken = req.cookies[`o.${shortId}`];
@@ -67,13 +73,12 @@ export const isRedirectAllowed = async (req: Request, res: Response, next: NextF
     }
 
     const claims = <IClaims>jwt.verify(originToken, originKey);
-    if (!claims || !claims.id || !claims.rd || !claims.iat || !claims.exp) {
-      // if theres no `rd=true` or jwt expired then re-auth manually
+    if (!claims || !claims.pk || !claims.iat || !claims.exp) {
+      // if theres no `pk` or jwt expired then re-auth manually
       return next()
     }
 
-    req.userId = claims.id;
-    req.redirect = claims.rd;
+    req.passKey = claims.pk
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
@@ -84,13 +89,23 @@ export const isRedirectAllowed = async (req: Request, res: Response, next: NextF
   }
 };
 
+export const createPassPage = async (url: IUrl) => {
+  await url.populate<{user: IUser}>('owner', 'name username');
+  const { username } = url.owner as unknown as IUser;
+  
+  const link = `${appUrl}/auth/redirect/${url.id}`;
+  const app = createApp(link, username);
+  const html = await renderToString(app);
+
+  return base(html);
+}
+
 // token generator
-export const createOriginToken = (urlId: string, redirect: boolean) => {
+export const createOriginToken = (passKey: string) => {
   try {
     const originToken = jwt.sign(
       {
-        id: urlId,
-        rd: redirect
+        pk: passKey
       },
       originKey,
       {

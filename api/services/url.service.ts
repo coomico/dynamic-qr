@@ -9,6 +9,7 @@ import { appUrl } from "../utils/envs";
 
 export const create = (data: IUrl) => {
   const id = nanoid(8);
+  const passKey = !!data.password ? nanoid(16) : undefined;
 
   const short = `${appUrl}/o/${id}`;
 
@@ -19,6 +20,7 @@ export const create = (data: IUrl) => {
     originUrl: data.originUrl,
     isPrivate: data.isPrivate,
     password: data.password,
+    passKey: passKey,
     description: data.description,
     owner: data.owner
   });
@@ -41,6 +43,10 @@ export const getSomeByOwner = async (ownerId: string | ObjectId, filter?: object
 };
 
 export const saveUpdate = async (url: IUrl, options?: SaveOptions) => {
+  if (!url.isNew && url.isModified('password')) {
+    url.passKey = nanoid(16);
+  }
+
   url = await url.save({
     timestamps: options?.timestamps ?? true
   });

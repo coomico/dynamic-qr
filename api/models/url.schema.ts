@@ -18,11 +18,13 @@ export interface IUrl extends Document, SchemaTimestampsConfig {
   isPrivate: boolean,
   password?: string,
   hasPassword: boolean,
+  passKey?: string,
   description?: string,
   visitCount: number,
   qrCode?: string,
   owner: ObjectId,
-  comparePassword(password: string): Promise<boolean>
+  comparePassword(password: string): Promise<boolean>,
+  comparePassKey(passKey: string): boolean
 }
 
 const UrlSchema = new Schema<IUrl>({
@@ -51,6 +53,12 @@ const UrlSchema = new Schema<IUrl>({
     type: String,
     required: function() {
       return this.isPrivate;
+    }
+  },
+  passKey: {
+    type: String,
+    required: function() {
+      return !!this.password;
     }
   },
   description: {
@@ -91,6 +99,7 @@ UrlSchema.pre('save', async function(next) {
 
   const passwordHash = await bcrypt.hash(this.password!, 8);
   this.password! = passwordHash;
+
   next();
 });
 
@@ -111,6 +120,10 @@ UrlSchema.method('comparePassword', async function(password: string) {
   
   const match = await bcrypt.compare(password, this.password);
   return match;
+});
+
+UrlSchema.method('comparePassKey', function (passKey: string) {
+  return passKey === this.passKey;
 });
 
 export default model<IUrl>('url', UrlSchema);

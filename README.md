@@ -18,6 +18,7 @@ Dynamic QR Code is an app that generate a QR Code which the target _(the url con
 - [x] Click/views counter
 - [x] Dark mode
 - [ ] Forgot password
+- [ ] Pagination for link collection
 
 ## Dependencies
 This app requires some packages as its dependencies.

@@ -51,7 +51,9 @@ export default function (html: string) {
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
 </head>
 <body>
-  <div id="app">${html}</div>
+  <div id="app">
+    ${html}
+  </div>
 </body>
 </html>`
 };

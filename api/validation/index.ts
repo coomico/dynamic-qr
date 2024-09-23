@@ -29,7 +29,7 @@ addErrors(ajv /*, {singleError: true} */);
 
 ajv.addKeyword({
   keyword: 'processOriginalUrl',
-  validate: (schema: Schema, data: UrlSchema) => {   
+  validate: (schema: Schema, data: UrlSchema) => {
     if (schema && data.originUrl) {
       try {
         const decoded = decodeURIComponent(data.originUrl);
