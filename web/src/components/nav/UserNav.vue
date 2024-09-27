@@ -16,7 +16,7 @@ import {
 import { ClearStateAndStorage, useAccountStore, useNotifStore } from '@/stores';
 
 const router = useRouter();
-const accountStore = useAccountStore()
+const accountStore = useAccountStore();
 
 const logoutAction = async () => {
     const status = await accountStore.Logout();
@@ -43,10 +43,10 @@ const logoutAction = async () => {
       <DropdownMenuLabel class="font-normal flex">
         <div class="flex flex-col space-y-1">
           <p class="text-sm font-medium leading-none max-w-56 truncate">
-            {{ accountStore.account?.name }}
+            {{ accountStore.account?.name ?? 'Your Name' }}
           </p>
           <p class="text-xs leading-none text-muted-foreground max-w-56 truncate">
-            {{ accountStore.account?.email }}
+            {{ accountStore.account?.email ?? 'your@mail.co' }}
           </p>
         </div>
       </DropdownMenuLabel>
