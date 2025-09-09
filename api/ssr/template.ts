@@ -33,7 +33,7 @@ export function createApp(redirect?: string, owner?: string) {
       </form>
 
       <div class="flex flex-col text-center">
-        <small class="text-gray-500">Short created by @{{ username }}.</small>
+        <small class="text-gray-500">Secret link by @{{ username }}.</small>
       </div>
 
     </div>
