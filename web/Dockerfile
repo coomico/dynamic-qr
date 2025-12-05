@@ -4,7 +4,7 @@ WORKDIR /web
 
 COPY . .
 
-RUN npm install
+RUN npm ci
 
 ENV VITE_API_URL=http://localhost:3002
 

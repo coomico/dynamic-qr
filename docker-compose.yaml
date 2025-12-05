@@ -50,7 +50,7 @@ services:
     container_name: mongodb
     # if u have issue like `MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!`
     # use mongo:4.4.18 instead.
-    image: mongo
+    image: mongo:4.4.18
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=your_mongo_user

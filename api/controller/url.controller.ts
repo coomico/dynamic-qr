@@ -1,185 +1,225 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from 'express';
 
-import { createQr, UrlService } from "../services";
+import { createQr, UrlService } from '../services';
 
-import { urlResponse } from "../transformer/response";
-import { ErrorCapture } from "../utils/error_capture";
-import { schemeFiller } from "../utils/filler";
-import { cookieOptions, createPassPage } from "../middlewares/auth.handler";
+import { urlResponse } from '../transformer/response';
+import { ErrorCapture } from '../utils/error_capture';
+import { schemeFiller } from '../utils/filler';
+import { cookieOptions, createPassPage } from '../middlewares/auth.handler';
+import { webHost } from '../utils/envs';
 
-export const createShortUrl = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const claimId = req.userId;
-    const data = req.body;
+export const createShortUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const claimId = req.userId;
+        const data = req.body;
 
-    data.owner = claimId;
-    const url = UrlService.create(data);
+        data.owner = claimId;
+        const url = UrlService.create(data);
 
-    if (data.plusQr) {
-      url.qrCode = await createQr(url.shortUrl);
+        if (data.plusQr) {
+            url.qrCode = await createQr(url.shortUrl);
+        }
+
+        await UrlService.saveUpdate(url);
+
+        res.content = {
+            status: 'success',
+            code: 201,
+            data: urlResponse(url),
+        };
+        res.logMessage = `[${url._id}] created by ${claimId}`;
+        return next();
+    } catch (error) {
+        return next(error);
     }
-
-    await UrlService.saveUpdate(url);
-    
-    res.content = {
-      status: 'success',
-      code: 201,
-      data: urlResponse(url)
-    };
-    res.logMessage = `[${url._id}] created by ${claimId}`;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
 };
 
-export const getOriginUrl = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { shortId } = req.params;
-    const url = await UrlService.getById(shortId);
+export const getOriginUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { shortId } = req.params;
+        const url = await UrlService.getById(shortId);
 
-    if (url.isPrivate) {
-      if (!req.passKey) {
-        const passPage = await createPassPage(url);
-        return res.status(200).send(passPage);
-      }
-
-      const match = url.comparePassKey(req.passKey);
-      if (!match) {
-        res.cookie(
-          `o.${url.id}`,
-          '',
-          Object.assign(
-            {},
-            cookieOptions,
-            {
-              path: `/o/${url.id}`,
-              expires: new Date(1),
-              maxAge: 10
+        if (url.isPrivate) {
+            if (!req.passKey) {
+                const passPage = await createPassPage(url);
+                return res.status(200).send(passPage);
             }
-          )
-        );
 
-        const passPage = await createPassPage(url);
-        return res.status(200).send(passPage);
-      }
+            const match = url.comparePassKey(req.passKey);
+            if (!match) {
+                res.cookie(
+                    `o.${url.id}`,
+                    '',
+                    Object.assign({}, cookieOptions, {
+                        domain: webHost,
+                        path: `/o/${url.id}`,
+                        expires: new Date(1),
+                        maxAge: 10,
+                    })
+                );
+
+                const passPage = await createPassPage(url);
+                return res.status(200).send(passPage);
+            }
+        }
+
+        url.visitCount += 1;
+        UrlService.saveUpdate(url, { timestamps: false });
+
+        res.content = {
+            status: 'redirect',
+            code: 302,
+            to: schemeFiller(url.originUrl),
+        };
+        return next();
+    } catch (error) {
+        return next(error);
     }
-    
-    url.visitCount += 1;
-    UrlService.saveUpdate(url, {timestamps: false});
-
-    res.content = {
-      status: 'redirect',
-      code: 302,
-      to: schemeFiller(url.originUrl)
-    };
-    return next();
-  } catch (error) {
-    return next(error);
-  }
 };
 
-export const getOneOwnedUrl = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const claimId = req.userId;
-    const { shortId } = req.params;
+export const getOneOwnedUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const claimId = req.userId;
+        const { shortId } = req.params;
 
-    const url = (await UrlService.getSomeByOwner(claimId, {_id: shortId}))[0];
-    if (!url) throw new ErrorCapture('the link was not found in your account', 404);
+        const url = (
+            await UrlService.getSomeByOwner(claimId, { _id: shortId })
+        )[0];
+        if (!url)
+            throw new ErrorCapture(
+                'the link was not found in your account',
+                404
+            );
 
-    res.content = {
-      status: 'success',
-      code: 200,
-      data: urlResponse(url)
-    };
+        res.content = {
+            status: 'success',
+            code: 200,
+            data: urlResponse(url),
+        };
 
-    res.logMessage = `${claimId} fetch ${url._id}`;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+        res.logMessage = `${claimId} fetch ${url._id}`;
+        return next();
+    } catch (error) {
+        return next(error);
+    }
 };
 
 // TODO: implement pagination
-export const getAllOwnedUrls = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const claimId = req.userId;
+export const getAllOwnedUrls = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const claimId = req.userId;
 
-    const urls = await UrlService.getSomeByOwner(claimId);
+        const urls = await UrlService.getSomeByOwner(claimId);
 
-    res.content = {
-      status: 'success',
-      code: 200,
-      data: urls.map(url => urlResponse(url)),
-      metadata: {
-        data_length: urls.length
-      }
-    };
+        res.content = {
+            status: 'success',
+            code: 200,
+            data: urls.map((url) => urlResponse(url)),
+            metadata: {
+                data_length: urls.length,
+            },
+        };
 
-    res.logMessage = `${claimId} fetch all owned urls`;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+        res.logMessage = `${claimId} fetch all owned urls`;
+        return next();
+    } catch (error) {
+        return next(error);
+    }
 };
 
-export const updateUrl = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const claimId = req.userId;
-    const data = req.body;
-    const { shortId } = req.params;
+export const updateUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const claimId = req.userId;
+        const data = req.body;
+        const { shortId } = req.params;
 
-    const url = await UrlService.getById(shortId);
-    if (claimId !== url.owner.toString()) throw new ErrorCapture('you are not allowed to update links that are not yours', 409);
+        const url = await UrlService.getById(shortId);
+        if (claimId !== url.owner.toString())
+            throw new ErrorCapture(
+                'you are not allowed to update links that are not yours',
+                409
+            );
 
-    url.title = data.title ?? url.title;
-    url.originUrl = data.originUrl ?? url.originUrl;
-    url.isPrivate = data.isPrivate ?? url.isPrivate;
-  
-    if (url.isPrivate && !url.password && !data.password) throw new ErrorCapture('required fields are missing or invalid', 400);
+        url.title = data.title ?? url.title;
+        url.originUrl = data.originUrl ?? url.originUrl;
+        url.isPrivate = data.isPrivate ?? url.isPrivate;
 
-    if (url.isPrivate && !!data.password) {
-      const match = await url.comparePassword(data.password);
-      if (match) throw new ErrorCapture('password is still the same as it is now, try a newer one', 409);
+        if (url.isPrivate && !url.password && !data.password)
+            throw new ErrorCapture(
+                'required fields are missing or invalid',
+                400
+            );
 
-      url.password = data.password;
+        if (url.isPrivate && !!data.password) {
+            const match = await url.comparePassword(data.password);
+            if (match)
+                throw new ErrorCapture(
+                    'password is still the same as it is now, try a newer one',
+                    409
+                );
+
+            url.password = data.password;
+        }
+
+        url.description = data.description ?? url.description;
+
+        if (!url.qrCode && data.plusQr) {
+            url.qrCode = await createQr(url.shortUrl);
+        }
+
+        await UrlService.saveUpdate(url);
+
+        res.content = {
+            status: 'empty',
+            code: 204,
+        };
+
+        res.logMessage = `[${url._id}] update successful`;
+        return next();
+    } catch (error) {
+        return next(error);
     }
-
-    url.description = data.description ?? url.description;
-
-    if (!url.qrCode && data.plusQr) {
-      url.qrCode = await createQr(url.shortUrl);
-    }
-
-    await UrlService.saveUpdate(url);
-
-    res.content = {
-      status: 'empty',
-      code: 204
-    };
-
-    res.logMessage = `[${url._id}] update successful`;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
 };
 
-export const removeUrl = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const claimId = req.userId;
-    const { shortId } = req.params;
+export const removeUrl = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const claimId = req.userId;
+        const { shortId } = req.params;
 
-    await UrlService.destroy(shortId, claimId);
+        await UrlService.destroy(shortId, claimId);
 
-    res.content = {
-      status: 'empty',
-      code: 205
-    };
+        res.content = {
+            status: 'empty',
+            code: 205,
+        };
 
-    res.logMessage = `[${shortId}] deletion successful`;
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+        res.logMessage = `[${shortId}] deletion successful`;
+        return next();
+    } catch (error) {
+        return next(error);
+    }
 };
